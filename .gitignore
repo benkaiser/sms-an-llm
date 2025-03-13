@@ -4,3 +4,4 @@ node_modules/
 *.key
 *.csr
 *.srl
+messages.db
