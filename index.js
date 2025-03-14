@@ -10,6 +10,29 @@ const PORT = process.env.PORT || 3000;
 const SMS_GATEWAY_URL = `http://127.0.0.1:8080`;
 const WEBHOOK_URL = `http://127.0.0.1:${PORT}/webhook`;
 
+const ALLOWED_COUNTRY_CODES = [
+  "+61",  // Australia
+  "+55",  // Brazil
+  "+1",   // Canada, USA
+  "+86",  // China
+  "+33",  // France
+  "+49",  // Germany
+  "+852", // Hong Kong
+  "+91",  // India
+  "+62",  // Indonesia
+  "+353", // Ireland
+  "+972", // Israel
+  "+81",  // Japan
+  "+60",  // Malaysia
+  "+52",  // Mexico
+  "+64",  // New Zealand
+  "+47",  // Norway
+  "+65",  // Singapore
+  "+82",  // South Korea
+  "+66",  // Thailand
+  "+44"   // UK
+];
+
 // Initialize SQLite database
 const db = new Database("messages.db");
 db.exec(
@@ -72,6 +95,11 @@ app.post("/webhook", async (req, res) => {
   const { message, phoneNumber } = req.body.payload;
   if (!message || !phoneNumber) {
     return res.status(400).json({ error: "Invalid payload" });
+  }
+
+  if (!ALLOWED_COUNTRY_CODES.some(code => phoneNumber.startsWith(code))) {
+    console.log("Blocked SMS from unauthorized country code:", phoneNumber);
+    return res.status(403).json({ error: "Unauthorized country code" });
   }
 
   // Check for reset command
