@@ -4,6 +4,7 @@
     "better-sqlite3": "^11.8.1",
     "body-parser": "^1.20.3",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "llama3-tokenizer-js": "^1.2.0"
   }
 }
