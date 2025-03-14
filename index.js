@@ -2,21 +2,13 @@ require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const bodyParser = require("body-parser");
-const https = require("https");
 const fs = require("fs");
 const Database = require("better-sqlite3");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SMS_GATEWAY_URL = `http://localhost:8080`;
-const WEBHOOK_URL = process.env.WEBHOOK_URL;
-
-// Load self-signed certificate
-const options = {
-  key: fs.readFileSync("server.key"),
-  cert: fs.readFileSync("server.crt"),
-  ca: fs.readFileSync("rootCA.crt"),
-};
+const SMS_GATEWAY_URL = `http://127.0.0.1:8080`;
+const WEBHOOK_URL = `http://127.0.0.1:${PORT}/webhook`;
 
 // Initialize SQLite database
 const db = new Database("messages.db");
@@ -86,7 +78,7 @@ app.post("/webhook", async (req, res) => {
   if (["CLEAR", "RESET", "NEW"].includes(message.trim().toUpperCase())) {
     db.prepare("DELETE FROM message_history WHERE phoneNumber = ?").run(phoneNumber);
     console.log("Cleared conversation history for", phoneNumber);
-    
+
     await axios.post(
       `${SMS_GATEWAY_URL}/message`,
       {
@@ -108,15 +100,15 @@ app.post("/webhook", async (req, res) => {
     // Retrieve message history
     const rows = db.prepare("SELECT message, response FROM message_history WHERE phoneNumber = ? ORDER BY timestamp ASC").all(phoneNumber);
 
-	  const conversationHistory = [
-  { role: "system", content: "Keep responses short and concise for SMS readability." },
-  ...rows.flatMap(row => [
-    { role: "user", content: row.message },
-    { role: "assistant", content: row.response }
-  ]),
-  { role: "user", content: message }
-];
-    
+    const conversationHistory = [
+      { role: "system", content: "Keep responses short and concise for SMS readability." },
+      ...rows.flatMap(row => [
+        { role: "user", content: row.message },
+        { role: "assistant", content: row.response }
+      ]),
+      { role: "user", content: message }
+    ];
+
     const llmResponse = await axios.post(
       "https://api.deepinfra.com/v1/openai/chat/completions",
       {
@@ -160,15 +152,14 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-// Test page to verify HTTPS setup
+// Test page to verify HTTP setup
 app.get("/test", (req, res) => {
-  res.send("HTTPS is working correctly!");
+  res.send("HTTP is working correctly!");
 });
 
-// Start HTTPS server
-https.createServer(options, app).listen(PORT, async () => {
-  console.log(`Server running on https://localhost:${PORT}`);
+// Start HTTP server
+app.listen(PORT, async () => {
+  console.log(`Server running on http://127.0.0.1:${PORT}`);
   await deregisterWebhooks();
   await registerWebhook();
 });
-
